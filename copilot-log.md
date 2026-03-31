@@ -494,6 +494,8 @@ You are the Frontend Engineer. Build the React + TypeScript SPA for the task man
 - **Playwright config:** `frontend/playwright.config.ts` (Chromium headless, baseURL = `http://localhost:5173`)
 - **Test run result:** 5/5 passed in 7.4 s
 
+### Prompt: "Write an end-to-end test file using Playwright that the following: page load , creating a new task via the modal, completing a task, deleting a task, and filtering tasks by priority. Save the test file in `frontend/e2e/`."
+
 ### Screenshots
 
 | # | Scenario | File |
