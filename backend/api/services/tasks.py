@@ -50,6 +50,14 @@ from ..storage import load_tasks, save_tasks
 
 
 def _to_response(doc: dict) -> TaskResponse:
+    """Convert a raw storage document to a TaskResponse schema.
+
+    Args:
+        doc: Dictionary loaded from storage containing raw task fields.
+
+    Returns:
+        A TaskResponse instance populated from the storage document.
+    """
     return TaskResponse(
         id=doc["id"],
         title=doc["title"],
@@ -65,6 +73,15 @@ def list_tasks(
     status_filter: TaskStatus | None = None,
     priority_filter: TaskPriority | None = None,
 ) -> list[TaskResponse]:
+    """Return all tasks, optionally filtered by status and/or priority.
+
+    Args:
+        status_filter: When provided, only tasks with this status are returned.
+        priority_filter: When provided, only tasks with this priority are returned.
+
+    Returns:
+        A list of TaskResponse objects matching the given filters.
+    """
     tasks = load_tasks()
     result = list(tasks.values())
     if status_filter is not None:
@@ -75,6 +92,14 @@ def list_tasks(
 
 
 def create_task(data: TaskCreate) -> TaskResponse:
+    """Create and persist a new task.
+
+    Args:
+        data: Validated task creation payload.
+
+    Returns:
+        The newly created TaskResponse with a generated UUID id and UTC timestamps.
+    """
     now = datetime.now(timezone.utc).isoformat()
     task_id = str(uuid.uuid4())
     doc: dict = {
@@ -93,6 +118,17 @@ def create_task(data: TaskCreate) -> TaskResponse:
 
 
 def get_task(task_id: str) -> TaskResponse:
+    """Retrieve a single task by its ID.
+
+    Args:
+        task_id: UUID4 string identifying the task.
+
+    Returns:
+        A TaskResponse with the task data.
+
+    Raises:
+        HTTPException: 404 if no task with that ID exists.
+    """
     tasks = load_tasks()
     doc = tasks.get(task_id)
     if not doc:
@@ -101,6 +137,19 @@ def get_task(task_id: str) -> TaskResponse:
 
 
 def update_task(task_id: str, data: TaskUpdate) -> TaskResponse:
+    """Apply a partial update to an existing task.
+
+    Args:
+        task_id: UUID4 string identifying the task.
+        data: Partial update payload; only fields present in the request are applied.
+
+    Returns:
+        The updated TaskResponse.
+
+    Raises:
+        HTTPException: 404 if no task with that ID exists.
+        HTTPException: 400 if the requested status transition is not permitted.
+    """
     tasks = load_tasks()
     doc = tasks.get(task_id)
     if not doc:
@@ -129,6 +178,14 @@ def update_task(task_id: str, data: TaskUpdate) -> TaskResponse:
 
 
 def delete_task(task_id: str) -> None:
+    """Permanently remove a task from storage.
+
+    Args:
+        task_id: UUID4 string identifying the task.
+
+    Raises:
+        HTTPException: 404 if no task with that ID exists.
+    """
     tasks = load_tasks()
     if task_id not in tasks:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
@@ -137,6 +194,18 @@ def delete_task(task_id: str) -> None:
 
 
 def complete_task(task_id: str) -> TaskResponse:
+    """Advance a task in 'in-progress' state to 'done'.
+
+    Args:
+        task_id: UUID4 string identifying the task.
+
+    Returns:
+        The updated TaskResponse with status set to 'done'.
+
+    Raises:
+        HTTPException: 404 if no task with that ID exists.
+        HTTPException: 400 if the task is not currently 'in-progress'.
+    """
     tasks = load_tasks()
     doc = tasks.get(task_id)
     if not doc:
@@ -157,11 +226,16 @@ def complete_task(task_id: str) -> TaskResponse:
 
 
 def get_stats() -> TaskStats:
+    """Aggregate task counts grouped by status and priority.
+
+    Returns:
+        A TaskStats instance with total count and breakdowns by status and priority.
+    """
     tasks = load_tasks()
     by_status: dict[str, int] = {s.value: 0 for s in TaskStatus}
     by_priority: dict[str, int] = {p.value: 0 for p in TaskPriority}
     for task in tasks.values():
         by_status[task["status"]] = by_status.get(task["status"], 0) + 1
         by_priority[task["priority"]] = by_priority.get(task["priority"], 0) + 1
-    return TaskStats(by_status=by_status, by_priority=by_priority)
+    return TaskStats(total=sum(by_status.values()), by_status=by_status, by_priority=by_priority)
 

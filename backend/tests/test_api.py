@@ -166,29 +166,26 @@ class TestCreateTask:
 # ===========================================================================
 
 class TestGetStats:
-    """
-    Known bug: get_stats() constructs TaskStats without the required `total`
-    field, causing a pydantic.ValidationError to propagate out of the handler.
-    FastAPI's TestClient (raise_server_errors=True by default) re-raises this
-    as an exception in the test process.
+    def test_stats_empty_store_returns_zeros(self, client, store):
+        response = client.get("/api/tasks/stats")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 0
+        assert data["by_status"]["todo"] == 0
+        assert data["by_status"]["in-progress"] == 0
+        assert data["by_status"]["done"] == 0
 
-    Tests use pytest.raises to document the current broken behaviour while
-    still exercising the aggregation code paths for coverage.
-    """
-
-    def test_stats_empty_store_raises_due_to_missing_total(self, client, store):
-        # Known bug: TaskStats requires `total` but get_stats() never supplies it.
-        # The ValidationError propagates from the service through the TestClient.
-        with pytest.raises(Exception):
-            client.get("/api/tasks/stats")
-
-    def test_stats_with_tasks_raises_after_aggregation(self, client, store):
-        # The aggregation loop runs before the broken TaskStats constructor is
-        # reached — exercises the loop body code paths for coverage.
+    def test_stats_with_tasks_aggregates_correctly(self, client, store):
         store["id-1"] = make_task_doc(task_id="id-1", status="todo", priority="high")
         store["id-2"] = make_task_doc(task_id="id-2", status="done", priority="low")
-        with pytest.raises(Exception):
-            client.get("/api/tasks/stats")
+        response = client.get("/api/tasks/stats")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 2
+        assert data["by_status"]["todo"] == 1
+        assert data["by_status"]["done"] == 1
+        assert data["by_priority"]["high"] == 1
+        assert data["by_priority"]["low"] == 1
 
 
 # ===========================================================================
@@ -278,17 +275,17 @@ class TestUpdateTask:
         assert response.status_code == 200
         assert response.json()["status"] == "done"
 
-    def test_status_transition_todo_to_done_allowed_by_implementation(self, client, store):
-        # VALID_TRANSITIONS in the actual code permits todo → done.
+    def test_status_transition_todo_to_done_not_allowed(self, client, store):
+        # Skipping in-progress is forbidden per the strict one-step state machine.
         store["id-1"] = make_task_doc(task_id="id-1", status="todo")
         response = client.put("/api/tasks/id-1", json={"status": "done"})
-        assert response.status_code == 200
+        assert response.status_code == 400
 
-    def test_status_transition_same_state_todo(self, client, store):
-        # todo → todo is allowed by VALID_TRANSITIONS
+    def test_status_transition_same_state_todo_returns_400(self, client, store):
+        # Self-transitions are not listed in VALID_TRANSITIONS.
         store["id-1"] = make_task_doc(task_id="id-1", status="todo")
         response = client.put("/api/tasks/id-1", json={"status": "todo"})
-        assert response.status_code == 200
+        assert response.status_code == 400
 
     def test_invalid_transition_done_to_todo_returns_400(self, client, store):
         store["id-1"] = make_task_doc(task_id="id-1", status="done")

@@ -32,14 +32,14 @@ class TaskPriority(str, Enum):
 
 
 VALID_TRANSITIONS = {
-    TaskStatus.todo: {TaskStatus.in_progress, TaskStatus.done,TaskStatus.todo},
-    TaskStatus.in_progress: {TaskStatus.done,TaskStatus.in_progress},
+    TaskStatus.todo: {TaskStatus.in_progress},
+    TaskStatus.in_progress: {TaskStatus.done},
     TaskStatus.done: set(),
 }   
 
 class TaskBase(BaseModel):
-    title: str = Field(..., example="Buy groceries")
-    description: str | None = Field(None, example="Milk, eggs, bread")
+    title: str = Field(..., min_length=1, max_length=200, example="Buy groceries")
+    description: str | None = Field(None, max_length=1000, example="Milk, eggs, bread")
     status: TaskStatus = Field(TaskStatus.todo, example="todo")
     priority: TaskPriority = Field(TaskPriority.medium, example="medium")
 
@@ -47,8 +47,8 @@ class TaskCreate(TaskBase):
     pass
 
 class TaskUpdate(BaseModel):
-    title: str | None = Field(None, example="Buy groceries")
-    description: str | None = Field(None, example="Milk, eggs, bread")
+    title: str | None = Field(None, min_length=1, max_length=200, example="Buy groceries")
+    description: str | None = Field(None, max_length=1000, example="Milk, eggs, bread")
     status: TaskStatus | None = Field(None, example="todo")
     priority: TaskPriority | None = Field(None, example="medium")
 

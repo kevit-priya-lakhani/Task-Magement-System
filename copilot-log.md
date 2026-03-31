@@ -442,5 +442,48 @@ You are the Frontend Engineer. Build the React + TypeScript SPA for the task man
 
 ## 5. Skills- Skill: [name] | Prompt: [prompt] | Changes: [what improved]
 
+---
+
+## 5. Code Review — `backend/api/services/tasks.py` vs `copilot-instructions.md`
+
+**Reviewed file:** `backend/api/services/tasks.py`
+**Related files fixed:** `backend/api/models/task.py`, `backend/tests/test_api.py`
+
+### Issues Found
+
+| # | File | Rule | Issue |
+|---|---|---|---|
+| 1 | `services/tasks.py` | §1 Docstrings | All 7 public functions (`_to_response`, `list_tasks`, `create_task`, `get_task`, `update_task`, `delete_task`, `complete_task`, `get_stats`) lacked Google-style docstrings with `Args:`, `Returns:`, and `Raises:` sections. |
+| 2 | `services/tasks.py` | Runtime bug | `get_stats()` never computed `total` and never passed it to `TaskStats(...)`, causing a `pydantic.ValidationError` on every `GET /api/tasks/stats` call. |
+| 3 | `models/task.py` | AGENTS.md state machine | `VALID_TRANSITIONS` allowed `todo → done` (a forbidden skip) and self-transitions `todo → todo` and `in-progress → in-progress`, violating the strict one-directional one-step-at-a-time spec. |
+| 4 | `models/task.py` | §2 Input Validation | `TaskBase.title` and `TaskUpdate.title` lacked `min_length=1, max_length=200`; `TaskBase.description` and `TaskUpdate.description` lacked `max_length=1000`. |
+
+### Fixes Applied
+
+**`backend/api/services/tasks.py`**
+- Added Google-style docstrings (with `Args:`, `Returns:`, `Raises:`) to all 7 functions.
+- Fixed `get_stats()`: added `total=sum(by_status.values())` to the `TaskStats(...)` constructor call.
+
+**`backend/api/models/task.py`**
+- Fixed `VALID_TRANSITIONS` to the correct strict machine:
+  ```python
+  VALID_TRANSITIONS = {
+      TaskStatus.todo: {TaskStatus.in_progress},
+      TaskStatus.in_progress: {TaskStatus.done},
+      TaskStatus.done: set(),
+  }
+  ```
+- Added `min_length=1, max_length=200` to `TaskBase.title` and `TaskUpdate.title`.
+- Added `max_length=1000` to `TaskBase.description` and `TaskUpdate.description`.
+
+**`backend/tests/test_api.py`**
+- Replaced `TestGetStats` `pytest.raises` workarounds with proper assertions on `total`, `by_status`, and `by_priority`.
+- Updated `test_status_transition_todo_to_done_allowed_by_implementation` → now asserts `400` (skip is forbidden).
+- Updated `test_status_transition_same_state_todo` → now asserts `400` (self-transition is not permitted).
+
+**Result:** 65/65 tests passing after all fixes.
+
+
+
 ## 6. Playwright MCP- Screenshot taken: yes/no
 - E2E test generated: [filename]
