@@ -1,3 +1,37 @@
+"""
+services/tasks.py — Business logic layer
+
+This module owns all business rules for the task management system and is the
+single authoritative source of truth for data mutations.  Routers are thin
+delegates; every decision is made here.
+
+Public interface
+----------------
+  list_tasks(status_filter, priority_filter)  → list[TaskResponse]
+      Return all tasks, optionally filtered by status and/or priority.
+
+  create_task(data: TaskCreate)               → TaskResponse
+      Persist a new task with a UUID4 id and UTC timestamps, then return it.
+
+  get_task(task_id)                           → TaskResponse
+      Fetch a single task by id; raises HTTP 404 if not found.
+
+  update_task(task_id, data: TaskUpdate)      → TaskResponse
+      Apply a partial update.  Status changes are validated against
+      VALID_TRANSITIONS; invalid transitions raise HTTP 400.
+
+  delete_task(task_id)                        → None
+      Remove a task permanently; raises HTTP 404 if not found.
+
+  get_stats()                                 → TaskStats
+      Aggregate task counts grouped by status and priority.
+
+Storage contract
+----------------
+  load_tasks() is called at the start of every operation to avoid serving stale
+  data.  save_tasks() is called after every mutation before the response is
+  returned.
+"""
 import uuid
 from datetime import datetime, timezone
 

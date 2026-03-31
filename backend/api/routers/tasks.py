@@ -1,11 +1,36 @@
-from typing import Annotated
+"""
+routers/tasks.py — HTTP route handlers for /api/tasks
 
-from fastapi import APIRouter, Path, Query
-from fastapi import status as http_status
+This module is intentionally thin: each handler validates HTTP-level concerns
+(path parameters, query parameters, status codes) and immediately delegates to
+the service layer.  No business logic lives here.
 
+Endpoints
+---------
+  GET    /tasks/stats              → TaskStats
+      Aggregate counts by status and priority.  Declared before /{task_id} to
+      prevent FastAPI from treating "stats" as a task UUID.
+
+  GET    /tasks/                   → list[TaskResponse]
+      List all tasks with optional ?status= and ?priority= query filters.
+
+  POST   /tasks/              201  → TaskResponse
+      Create a new task from the JSON request body.
+
+  GET    /tasks/{task_id}          → TaskResponse
+      Retrieve a single task by its UUID.
+
+  PUT    /tasks/{task_id}          → TaskResponse
+      Partially update a task's fields (title, description, status, priority).
+
+  DELETE /tasks/{task_id}     204  → (no body)
+      Permanently delete a task.
+
+  POST   /tasks/{task_id}/complete → TaskResponse
+      Convenience endpoint to advance a task to its next valid state.
+""" 
 from ..models.task import TaskCreate, TaskPriority, TaskResponse, TaskStats, TaskStatus, TaskUpdate
 from ..services import tasks as task_service
-
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 
