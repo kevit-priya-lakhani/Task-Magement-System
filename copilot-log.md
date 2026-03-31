@@ -83,7 +83,7 @@ This module is intentionally thin: each handler validates HTTP-level concerns
 (path parameters, query parameters, status codes) and immediately delegates to
 the service layer.  No business logic lives here.
 
-Endpoints
+    Endpoints
 ---------
   GET    /tasks/stats              → TaskStats
       Aggregate counts by status and priority.  Declared before /{task_id} to
@@ -174,7 +174,7 @@ This module owns all business rules for the task management system and is the
 single authoritative source of truth for data mutations.  Routers are thin
 delegates; every decision is made here.
 
-Public interface
+    Public interface
 ----------------
   list_tasks(status_filter, priority_filter)  → list[TaskResponse]
       Return all tasks, optionally filtered by status and/or priority.
@@ -195,7 +195,7 @@ Public interface
   get_stats()                                 → TaskStats
       Aggregate task counts grouped by status and priority.
 
-Storage contract
+    Storage contract
 ----------------
   load_tasks() is called at the start of every operation to avoid serving stale
   data.  save_tasks() is called after every mutation before the response is
@@ -338,11 +338,75 @@ def get_stats() -> TaskStats:
 
 ```
 
+
+
+
 ## 2. Agent Mode Prompts- [prompt] → [files changed / result]
+
+### 1. Scaffold FastAPI backend with task CRUD
+**Prompt:** "Set up the FastAPI backend for the task management system. Create the folder structure under `backend/api/` with `main.py`, `storage.py`, `models/task.py`, `routers/tasks.py`, and `services/tasks.py`. Use file-based persistence via `tasks.json`. Follow the thin-router / fat-service pattern. Mount all routes under `/api`. Add CORS middleware allowing the Vite dev server on port 5173."
+
+**Files changed:**
+- `backend/api/main.py` — FastAPI app factory, CORS middleware, router registration under `/api`
+- `backend/api/storage.py` — `load_tasks()` / `save_tasks()` helpers backed by `tasks.json`
+- `backend/api/models/task.py` — `TaskStatus`, `TaskPriority`, `VALID_TRANSITIONS`, `TaskCreate`, `TaskUpdate`, `TaskResponse`, `TaskStats`
+- `backend/api/routers/tasks.py` — thin HTTP handlers for all 7 endpoints; `/stats` declared before `/{task_id}`
+- `backend/api/services/tasks.py` — all business logic: CRUD, filtering, state-machine enforcement, aggregation
+
+---
+
+### 2. Add `ApiResponse` envelope to all backend routes
+**Prompt:** "Wrap every endpoint response in the standard `ApiResponse` envelope `{success: true, data: ...}`. Define a generic `ApiResponse[T]` Pydantic model in `models/task.py`. Update every route's `response_model` and return value accordingly. DELETE (204) routes are exempt."
+
+**Files changed:**
+- `backend/api/models/task.py` — added `ApiResponse(Generic[T])` model
+- `backend/api/routers/tasks.py` — updated all `response_model=` annotations and return statements
+
+---
+
+### 3. Build React + TypeScript frontend
+**Prompt:** "Build the React frontend using Vite, TypeScript strict mode, and SWR for data fetching. Create `src/api/tasks.ts` with a typed API client covering all backend endpoints — all calls behind a `request<T>()` helper that unwraps the `ApiResponse` envelope. Build `App.tsx` with task list table, status/priority badge components, search/filter toolbar, and action buttons (complete, edit, delete). Use CSS Modules / plain CSS, no CSS-in-JS."
+
+**Files changed:**
+- `frontend/src/api/tasks.ts` — `Task`, `TaskCreate`, `TaskUpdate`, `TaskStats` interfaces; full `api` object; `request<T>()` with envelope unwrapping
+- `frontend/src/App.tsx` — root component with SWR hook, `TaskRow`, `PriorityBadge`, `StatusBadge`, icon components, filter/search state
+- `frontend/src/App.css` — table layout, badge colours, action button styles, modal overlay styles
+
+---
+
+### 4. Add TaskModal and Toast components
+**Prompt:** "Create a `TaskModal` component that handles both creating and editing tasks. It should use controlled form inputs for title, description, status, and priority. Call `api.createTask()` or `api.updateTask()` on submit and trigger `onSaved()` / `onError()` callbacks. Also create a `Toast` component for success/error notifications with auto-dismiss."
+
+**Files changed:**
+- `frontend/src/components/TaskModal.tsx` — create/edit form, controlled inputs, validation, `api` calls
+- `frontend/src/components/Toast.tsx` — success/error toast with auto-dismiss
+- `frontend/src/App.tsx` — wired modal open state, toast queue, `mutate()` calls after mutations
 
 ## 3. Sub-Agent Usage- @ui-agent: [prompt] → [result]
 - @backend-agent: [prompt] → [result]
 - @testing-agent: [prompt] → [result]
+
+### Backend Engineer — Build FastAPI task management API
+**Prompt:** "You are the Backend Engineer. Build the complete FastAPI task management API. Implement all models (`TaskStatus`, `TaskPriority`, `VALID_TRANSITIONS`, `TaskCreate`, `TaskUpdate`, `TaskResponse`, `TaskStats`, `ApiResponse`), storage helpers, service layer with full CRUD + stats + state-machine transitions, and thin HTTP routers. Mount everything under `/api`. Enforce one-directional state transitions: `todo → in-progress → done` only."
+
+**Result:**
+- `backend/api/models/task.py` — all Pydantic models and enums
+- `backend/api/services/tasks.py` — `list_tasks`, `create_task`, `get_task`, `update_task`, `delete_task`, `complete_task`, `get_stats`
+- `backend/api/routers/tasks.py` — 7 route handlers delegating to service layer
+- `backend/api/storage.py` — JSON file persistence
+- `backend/api/main.py` — app factory with CORS and router mount
+
+---
+
+### Frontend Engineer — Build React task management UI
+**Prompt:** "You are the Frontend Engineer. Build the React + TypeScript SPA for the task management system. Create `src/api/tasks.ts` with typed interfaces mirroring all backend models and a `request<T>()` helper that unwraps the `ApiResponse` envelope. Build `App.tsx` using SWR for all server state. Add `TaskModal` for create/edit and `Toast` for notifications. No `useEffect` + `useState` for remote data — SWR only. No `fetch` outside `api/tasks.ts`."
+
+**Result:**
+- `frontend/src/api/tasks.ts` — full typed API client
+- `frontend/src/App.tsx` — task list with filter, search, action buttons
+- `frontend/src/components/TaskModal.tsx` — create/edit modal form
+- `frontend/src/components/Toast.tsx` — auto-dismiss notification component
+- `frontend/src/App.css` — styling for all components
 
 ## 4. Review Agent- Issues found: ...
 - Fixes applied: ...
