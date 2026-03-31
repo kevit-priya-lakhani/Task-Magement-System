@@ -28,7 +28,12 @@ Endpoints
 
   POST   /tasks/{task_id}/complete → TaskResponse
       Convenience endpoint to advance a task to its next valid state.
-""" 
+"""
+from typing import Annotated
+
+from fastapi import APIRouter, Path, Query
+from fastapi import status as http_status
+
 from ..models.task import TaskCreate, TaskPriority, TaskResponse, TaskStats, TaskStatus, TaskUpdate
 from ..services import tasks as task_service
 router = APIRouter(prefix="/tasks", tags=["tasks"])
