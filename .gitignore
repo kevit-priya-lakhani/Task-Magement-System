@@ -1,4 +1,5 @@
 .env
+.playwright-mcp/
 */.env
 .pyc
 __pycache__/
@@ -7,3 +8,7 @@ __pycache__/
 *.db
 *.bak
 *.swp
+
+# Playwright generated artifacts
+frontend/playwright-report/
+frontend/test-results/

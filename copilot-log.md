@@ -485,5 +485,50 @@ You are the Frontend Engineer. Build the React + TypeScript SPA for the task man
 
 
 
-## 6. Playwright MCP- Screenshot taken: yes/no
-- E2E test generated: [filename]
+## 6. Playwright MCP- Screenshot taken: yes
+- E2E test generated: `frontend/e2e/tasks.spec.ts`
+
+### Setup
+- **Backend:** `http://127.0.0.1:8000` (FastAPI via uvicorn in backend `.venv`)
+- **Frontend:** `http://localhost:5173` (Vite dev server)
+- **Playwright config:** `frontend/playwright.config.ts` (Chromium headless, baseURL = `http://localhost:5173`)
+- **Test run result:** 5/5 passed in 7.4 s
+
+### Screenshots
+
+| # | Scenario | File |
+|---|---|---|
+| 1 | **Page load** — app renders with header, toolbar and task table | `screenshots/01-page-load.png` |
+| 2 | **Add task** — "New Task" modal open with title, description, priority filled | `screenshots/02-add-task-modal.png` |
+| 3 | **Task added** — task list after "E2E Test Task" (High / Todo) was created | `screenshots/03-task-added.png` |
+| 4 | **Complete task** — "New12" status changed from In Progress → Done | `screenshots/04-complete-task.png` |
+| 5 | **Delete task** — "E2E Test Task" removed; list back to 5 tasks | `screenshots/05-delete-task.png` |
+| 6 | **Priority filter** — "High" filter applied; only 1 task visible | `screenshots/06-priority-filter.png` |
+
+### Screenshot: Page Load
+![Page Load](screenshots/01-page-load.png)
+
+### Screenshot: Add Task Modal
+![Add Task Modal](screenshots/02-add-task-modal.png)
+
+### Screenshot: Task Added
+![Task Added](screenshots/03-task-added.png)
+
+### Screenshot: Complete Task
+![Complete Task](screenshots/04-complete-task.png)
+
+### Screenshot: Delete Task
+![Delete Task](screenshots/05-delete-task.png)
+
+### Screenshot: Priority Filter
+![Priority Filter](screenshots/06-priority-filter.png)
+
+### E2E Test Scenarios (`frontend/e2e/tasks.spec.ts`)
+
+| Test | Description | Result |
+|---|---|---|
+| `Page load` | Header, toolbar, table columns visible; task count > 0 | ✅ Pass |
+| `Add task` | Open modal → fill title/desc/priority → submit → row appears in table; count +1 | ✅ Pass |
+| `Complete task` | Create in-progress task → click ✓ → status badge shows Done; complete btn disappears | ✅ Pass |
+| `Delete task` | Create task → click 🗑 → row disappears; count -1 | ✅ Pass |
+| `Priority filter` | Select High → only High-priority rows visible; Low-priority row hidden | ✅ Pass |
