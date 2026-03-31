@@ -1,0 +1,29 @@
+{
+  "846cbd11-3ee7-4c02-ae95-8b11128a15ca": {
+    "id": "846cbd11-3ee7-4c02-ae95-8b11128a15ca",
+    "title": "First",
+    "description": "first task",
+    "status": "done",
+    "priority": "medium",
+    "created_at": "2026-03-31T08:52:39.938257+00:00",
+    "updated_at": "2026-03-31T09:20:34.652022+00:00"
+  },
+  "a34529c7-5246-4374-b3b3-ce9671632c76": {
+    "id": "a34529c7-5246-4374-b3b3-ce9671632c76",
+    "title": "Second",
+    "description": "this is the second task",
+    "status": "in-progress",
+    "priority": "high",
+    "created_at": "2026-03-31T09:17:36.743914+00:00",
+    "updated_at": "2026-03-31T09:17:36.743914+00:00"
+  },
+  "ae2005ce-3aeb-4898-9753-022bb7f0f61a": {
+    "id": "ae2005ce-3aeb-4898-9753-022bb7f0f61a",
+    "title": "third",
+    "description": null,
+    "status": "todo",
+    "priority": "medium",
+    "created_at": "2026-03-31T09:26:26.161418+00:00",
+    "updated_at": "2026-03-31T09:26:26.161418+00:00"
+  }
+}
